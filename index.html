@@ -10,27 +10,32 @@ body {
     overflow: hidden;
     background: black;
     font-family: Arial, sans-serif;
-    color: white;
-    text-align: center;
 }
 
+/* ===== TIÊU ĐỀ ===== */
 h1 {
     position: absolute;
     top: 20%;
     width: 100%;
+    text-align: center;
     font-size: 60px;
+    color: white;
     animation: glow 2s infinite alternate;
+    z-index: 10;              /* luôn nằm trên canvas */
+    pointer-events: none;     /* click xuyên qua chữ */
 }
 
 @keyframes glow {
     from { text-shadow: 0 0 10px gold; }
-    to { text-shadow: 0 0 30px red; }
+    to { text-shadow: 0 0 30px red, 0 0 50px orange; }
 }
 
+/* ===== CANVAS ===== */
 canvas {
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
 }
 </style>
 </head>
@@ -43,17 +48,17 @@ canvas {
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let particles = [];
 
-/* ===== TẠO ÂM THANH NỔ ===== */
+/* ===== ÂM THANH ===== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playBoom() {
     const duration = 0.4;
-
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
 
@@ -69,11 +74,15 @@ function playBoom() {
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + duration);
 }
-/* =========================== */
 
+/* ===== TẠO PHÁO HOA ===== */
 function createFirework(x, y) {
 
-    playBoom(); // GỌI ÂM THANH
+    if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+    }
+
+    playBoom();
 
     for (let i = 0; i < 120; i++) {
         particles.push({
@@ -88,40 +97,9 @@ function createFirework(x, y) {
     }
 }
 
+/* ===== ANIMATION ===== */
 function animate() {
     requestAnimationFrame(animate);
+
     ctx.fillStyle = "rgba(0,0,0,0.2)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    particles.forEach((p, index) => {
-        p.x += Math.cos(p.angle) * p.speed;
-        p.y += Math.sin(p.angle) * p.speed;
-        p.life--;
-        p.speed *= 0.96;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        if (p.life <= 0) {
-            particles.splice(index, 1);
-        }
-    });
-}
-
-window.addEventListener("click", (e) => {
-
-    // Bắt buộc resume audio khi click lần đầu
-    if (audioCtx.state === "suspended") {
-        audioCtx.resume();
-    }
-
-    createFirework(e.clientX, e.clientY);
-});
-
-animate();
-</script>
-
-</body>
-</html>
